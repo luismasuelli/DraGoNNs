@@ -2,7 +2,7 @@ package matrices
 
 import "gonum.org/v1/gonum/mat"
 
-// Standard addition and element-wise operations
+// Standard ops and element-wise operations
 
 func Add(a, b mat.Matrix) mat.Matrix {
 	rows, columns := a.Dims()
@@ -39,5 +39,23 @@ func LinearProduct(a, b mat.Matrix) mat.Matrix {
 	_, columns := b.Dims()
 	result := mat.NewDense(rows, columns, nil)
 	result.Product(a, b)
+	return result
+}
+
+// Other operations to modify the matrices
+
+func GlueHorizontally(a, b mat.Matrix) mat.Matrix {
+	rows, columnsA := a.Dims()
+	_, columnsB := b.Dims()
+	result := mat.NewDense(rows, columnsA + columnsB, nil)
+	result.Augment(a, b)
+	return result
+}
+
+func GlueVertically(a, b mat.Matrix) mat.Matrix {
+	rowsA, columns := a.Dims()
+	rowsB, _ := b.Dims()
+	result := mat.NewDense(rowsA + rowsB, columns, nil)
+	result.Augment(a, b)
 	return result
 }
