@@ -4,28 +4,28 @@ import "gonum.org/v1/gonum/mat"
 
 // Standard ops and element-wise operations
 
-func Add(a, b mat.Matrix) mat.Matrix {
+func Add(a, b mat.Matrix) *mat.Dense {
 	rows, columns := a.Dims()
 	result := mat.NewDense(rows, columns, nil)
 	result.Add(a, b)
 	return result
 }
 
-func Sub(a, b mat.Matrix) mat.Matrix {
+func Sub(a, b mat.Matrix) *mat.Dense {
 	rows, columns := a.Dims()
 	result := mat.NewDense(rows, columns, nil)
 	result.Sub(a, b)
 	return result
 }
 
-func Mul(a, b mat.Matrix) mat.Matrix {
+func Mul(a, b mat.Matrix) *mat.Dense {
 	rows, columns := a.Dims()
 	result := mat.NewDense(rows, columns, nil)
 	result.MulElem(a, b)
 	return result
 }
 
-func Scale(a float64, b mat.Matrix) mat.Matrix {
+func Scale(a float64, b mat.Matrix) *mat.Dense {
 	rows, columns := b.Dims()
 	result := mat.NewDense(rows, columns, nil)
 	result.Scale(a, b)
@@ -34,7 +34,7 @@ func Scale(a float64, b mat.Matrix) mat.Matrix {
 
 // Linear product, ideal for AX + B operations
 
-func LinearProduct(a, b mat.Matrix) mat.Matrix {
+func LinearProduct(a, b mat.Matrix) *mat.Dense {
 	rows, _ := a.Dims()
 	_, columns := b.Dims()
 	result := mat.NewDense(rows, columns, nil)
@@ -44,7 +44,7 @@ func LinearProduct(a, b mat.Matrix) mat.Matrix {
 
 // Other operations to modify the matrices
 
-func GlueHorizontally(a, b mat.Matrix) mat.Matrix {
+func GlueHorizontally(a, b mat.Matrix) *mat.Dense {
 	rows, columnsA := a.Dims()
 	_, columnsB := b.Dims()
 	result := mat.NewDense(rows, columnsA + columnsB, nil)
@@ -52,7 +52,7 @@ func GlueHorizontally(a, b mat.Matrix) mat.Matrix {
 	return result
 }
 
-func GlueVertically(a, b mat.Matrix) mat.Matrix {
+func GlueVertically(a, b mat.Matrix) *mat.Dense {
 	rowsA, columns := a.Dims()
 	rowsB, _ := b.Dims()
 	result := mat.NewDense(rowsA + rowsB, columns, nil)

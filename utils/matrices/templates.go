@@ -6,7 +6,7 @@ import (
 	"math"
 )
 
-func Fill(rows, columns int, value float64) mat.Matrix {
+func Fill(rows, columns int, value float64) *mat.Dense {
 	elements := make([]float64, rows * columns)
 	for index := range elements {
 		elements[index] = value
@@ -14,15 +14,15 @@ func Fill(rows, columns int, value float64) mat.Matrix {
 	return mat.NewDense(rows, columns, elements)
 }
 
-func FillRow(columns int, value float64) mat.Matrix {
+func FillRow(columns int, value float64) *mat.Dense {
 	return Fill(1, columns, value)
 }
 
-func FillColumn(rows int, value float64) mat.Matrix {
+func FillColumn(rows int, value float64) *mat.Dense {
 	return Fill(rows, 1, value)
 }
 
-func Noise(rows, columns int, cap float64) mat.Matrix {
+func Noise(rows, columns int, cap float64) *mat.Dense {
 	elements := make([]float64, rows * columns)
 	cap = math.Abs(cap)
 	random := distuv.Uniform{Min: -cap, Max: cap}
@@ -32,10 +32,10 @@ func Noise(rows, columns int, cap float64) mat.Matrix {
 	return mat.NewDense(rows, columns, elements)
 }
 
-func NoiseRow(columns int, cap float64) mat.Matrix {
+func NoiseRow(columns int, cap float64) *mat.Dense {
 	return Noise(1, columns, cap)
 }
 
-func NoiseColumn(rows int, cap float64) mat.Matrix {
+func NoiseColumn(rows int, cap float64) *mat.Dense {
 	return Noise(rows, 1, cap)
 }
