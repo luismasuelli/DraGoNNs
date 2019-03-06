@@ -32,6 +32,13 @@ func Scale(a float64, b mat.Matrix) *mat.Dense {
 	return result
 }
 
+func Map(f func(i, j int, v float64) float64, a *mat.Dense) *mat.Dense {
+	rows, columns := a.Dims()
+	result := mat.NewDense(rows, columns, nil)
+	result.Apply(f, a)
+	return result
+}
+
 // Linear product, ideal for AX + B operations
 
 func LinearProduct(a, b mat.Matrix) *mat.Dense {
