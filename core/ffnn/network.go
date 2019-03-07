@@ -1,4 +1,4 @@
-package types
+package ffnn
 
 import "gonum.org/v1/gonum/mat"
 
