@@ -13,7 +13,7 @@ type Activator interface {
 	// The base function
 	Base(*mat.Dense, *mat.Dense)
 	// The derivative
-	Derivative(*mat.Dense, *mat.Dense)
+	Derivative(source *mat.Dense, destination *mat.Dense)
 }
 
 
@@ -45,9 +45,9 @@ func (s Sigmoid) Derivative(source, destination *mat.Dense) {
 //   the activations (final values) against the expected ones.
 type ErrorMetric interface {
 	// The base function
-	Base(expectedActivations, finalActivations *mat.Dense) float64
+	Base(finalActivations, expectedActivations *mat.Dense) float64
 	// The derivative, intended to be computed into an existing matrix
-	Gradient(expectedActivations, finalActivations, gradient *mat.Dense)
+	Gradient(finalActivations, expectedActivations, gradient *mat.Dense)
 }
 
 
@@ -69,5 +69,5 @@ func (hse HalfSquaredError) Base(finalActivations, expectedActivations *mat.Dens
 }
 func (hse HalfSquaredError) Gradient(finalActivations, expectedActivations, gradient *mat.Dense) {
 	// The gradient of the HSE is the difference.
-	gradient.Sub(finalActivations, expectedActivations)
+	gradient.Sub(expectedActivations, finalActivations)
 }
