@@ -71,3 +71,46 @@ func (hse HalfSquaredError) Gradient(finalActivations, expectedActivations, grad
 	// The gradient of the HSE is the difference.
 	gradient.Sub(expectedActivations, finalActivations)
 }
+
+
+var activators = map[string]Activator{
+	"_default": Sigmoid{},
+	"sigmoid": Sigmoid{},
+}
+
+var errorMetrics = map[string]ErrorMetric{
+	"_default": HalfSquaredError{},
+	"HalSquaredError": HalfSquaredError{},
+}
+
+func RegisterActivator(name string, activator Activator) bool {
+	if _, found := activators[name]; !found && activator != nil {
+		activators[name] = activator
+		return true
+	}
+	return false
+}
+
+func GetActivator(name string) Activator {
+	if activator, found := activators[name]; found {
+		return activator
+	} else {
+		return activators["_default"]
+	}
+}
+
+func RegisterErrorMetric(name string, errorMetric ErrorMetric) bool {
+	if _, found := errorMetrics[name]; !found && errorMetric != nil {
+		errorMetrics[name] = errorMetric
+		return true
+	}
+	return false
+}
+
+func GetErrorMetric(name string) ErrorMetric {
+	if errorMetric, found := errorMetrics[name]; found {
+		return errorMetric
+	} else {
+		return errorMetrics["_default"]
+	}
+}
