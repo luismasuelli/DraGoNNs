@@ -2,7 +2,7 @@ package ffnn
 
 import (
 	"gonum.org/v1/gonum/mat"
-	"../../utils/matrices"
+	"../utils/matrices"
 	"math"
 )
 
