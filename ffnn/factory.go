@@ -10,15 +10,15 @@ import (
 
 
 type serializedFFLayer struct {
-	activator           string
-	outputSize          int
-	weightsData         []byte
+	Activator           string
+	OutputSize          int
+	WeightsData         []byte
 }
 type serializedFFNetwork struct {
-	errorMetric         string
-	defaultLearningRate float64
-	inputSize           int
-	layers              []*serializedFFLayer
+	ErrorMetric         string
+	DefaultLearningRate float64
+	InputSize           int
+	Layers              []*serializedFFLayer
 }
 func withExtension(filename string, extension string) string {
 	if strings.Trim(filename, " \r\n\t") == "" {
@@ -57,37 +57,37 @@ func Load(filename string) (*FFNetwork, error) {
 		return nil, err
 	}
 
-	if serialized.inputSize < 1 {
+	if serialized.InputSize < 1 {
 		return nil, errors.New("input size must be >= 1")
 	}
 
-	layersCount := len(serialized.layers)
-	if len(serialized.layers) == 0 {
+	layersCount := len(serialized.Layers)
+	if len(serialized.Layers) == 0 {
 		return nil, errors.New("at least one layer must be present")
 	}
 
-	if serialized.defaultLearningRate <= 0 {
+	if serialized.DefaultLearningRate <= 0 {
 		return nil, errors.New("learning rate must be positive (and, preferably, small)")
 	}
 
 	network := &FFNetwork{
-		defaultLearningRate: serialized.defaultLearningRate,
-		errorMetric: GetErrorMetric(serialized.errorMetric),
+		defaultLearningRate: serialized.DefaultLearningRate,
+		errorMetric: GetErrorMetric(serialized.ErrorMetric),
 		layers: make([]*FFLayer, layersCount),
 		activatorDerivativeResultsOverWeightedInputs: make([]*mat.Dense, layersCount),
 		activationsCostGradients: make([]*mat.Dense, layersCount),
 		errorsOverWeightedInputs: make([]*mat.Dense, layersCount),
 	}
 
-	inputSize := serialized.inputSize
-	for index, serializedLayer := range serialized.layers {
-		outputSize := serializedLayer.outputSize
+	inputSize := serialized.InputSize
+	for index, serializedLayer := range serialized.Layers {
+		outputSize := serializedLayer.OutputSize
 		if outputSize < 1 {
 			return nil, errors.New("output size must be >= 1")
 		}
-		activator := GetActivator(serializedLayer.activator)
+		activator := GetActivator(serializedLayer.Activator)
 
-		if layer, err := loadLayer(inputSize, outputSize, activator, serializedLayer.weightsData); err != nil {
+		if layer, err := loadLayer(inputSize, outputSize, activator, serializedLayer.WeightsData); err != nil {
 			return nil, err
 		} else {
 			network.layers[index] = layer
@@ -98,7 +98,7 @@ func Load(filename string) (*FFNetwork, error) {
 		}
 
 		// output size is the new input size
-		inputSize = serializedLayer.outputSize
+		inputSize = serializedLayer.OutputSize
 	}
 
 	return network, nil
@@ -106,7 +106,7 @@ func Load(filename string) (*FFNetwork, error) {
 
 
 func Save(network *FFNetwork, filename string) (error) {
-	filename = withExtension(filename, ".ffnn")
+	filename = withExtension(filename, "ffnn")
 	if network == nil {
 		return errors.New("network is nil")
 	}
@@ -121,19 +121,19 @@ func Save(network *FFNetwork, filename string) (error) {
 	}
 
 	serialized := serializedFFNetwork{
-		defaultLearningRate: network.defaultLearningRate,
-		inputSize: network.layers[0].inputSize,
-		layers: make([]*serializedFFLayer, len(network.layers)),
-		errorMetric: network.errorMetric.Name(),
+		DefaultLearningRate: network.defaultLearningRate,
+		InputSize: network.layers[0].inputSize,
+		Layers: make([]*serializedFFLayer, len(network.layers)),
+		ErrorMetric: network.errorMetric.Name(),
 	}
 	for index, layer := range network.layers {
 		if weightsData, err := encodeFFLayer(layer); err != nil {
 			return err
 		} else {
-			serialized.layers[index] = &serializedFFLayer{
-				activator: layer.activator.Name(),
-				outputSize: layer.outputSize,
-				weightsData: weightsData,
+			serialized.Layers[index] = &serializedFFLayer{
+				Activator: layer.activator.Name(),
+				OutputSize: layer.outputSize,
+				WeightsData: weightsData,
 			}
 		}
 	}
