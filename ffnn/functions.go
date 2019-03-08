@@ -3,6 +3,7 @@ package ffnn
 import (
 	"gonum.org/v1/gonum/mat"
 	"../utils/matrices"
+	"../utils/matrices/ops"
 	"math"
 )
 
@@ -13,9 +14,9 @@ type Activator interface {
 	// Function name (key)
 	Name() string
 	// The base function
-	Base(*mat.Dense, *mat.Dense)
+	Base(z *mat.Dense, a *mat.Dense) *mat.Dense
 	// The derivative
-	Derivative(source *mat.Dense, destination *mat.Dense)
+	Derivative(z *mat.Dense, da_dz *mat.Dense) *mat.Dense
 }
 
 
@@ -27,16 +28,14 @@ type Sigmoid struct{}
 func (s Sigmoid) Name() string {
 	return "Sigmoid"
 }
-func (s Sigmoid) Base(source, destination *mat.Dense) {
-	destination.Apply(sigmoid, source)
+func (s Sigmoid) Base(z, a *mat.Dense) *mat.Dense {
+	return ops.Apply(sigmoid, z, a)
 }
-func (s Sigmoid) Derivative(source, destination *mat.Dense) {
-	rows, columns := destination.Dims()
-	ones := matrices.Fill(rows, columns, 1)
-	base := mat.NewDense(rows, columns, nil)
-	s.Base(source, base)
-	destination.Sub(ones, base)
-	destination.MulElem(destination, base)
+func (s Sigmoid) Derivative(z, da_dz *mat.Dense) *mat.Dense {
+	rows, columns := da_dz.Dims()
+	base := s.Base(z, mat.NewDense(rows, columns, nil))
+	ops.Sub(matrices.Fill(rows, columns, 1), base, da_dz)
+	return ops.H(da_dz, base, da_dz)
 }
 
 
@@ -47,14 +46,14 @@ func (s Sigmoid) Derivative(source, destination *mat.Dense) {
 //   the cost value (the actual error).
 //
 // This error metric is intended to be calculated on
-//   the activations (final values) against the expected ones.
+//   the a (final values) against the expected ones.
 type ErrorMetric interface {
 	// Function name (key)
 	Name() string
 	// The base function
-	Base(finalActivations, expectedActivations *mat.Dense) float64
+	Base(a, t *mat.Dense) float64
 	// The derivative, intended to be computed into an existing matrix
-	Gradient(finalActivations, expectedActivations, gradient *mat.Dense)
+	Gradient(a, t, dc_da *mat.Dense) *mat.Dense
 }
 
 
@@ -63,23 +62,21 @@ type HalfSquaredError struct{}
 func (hse HalfSquaredError) Name() string {
 	return "HalfSquaredError"
 }
-func (hse HalfSquaredError) Base(finalActivations, expectedActivations *mat.Dense) float64 {
+func (hse HalfSquaredError) Base(a, t *mat.Dense) float64 {
 	// This function is for a single training example. For batches of N elements,
 	//   this value must be summed among them and then divided by N. This is the
 	//   main reason why I avoided naming this one "mean squared error".
-	rows, columns := expectedActivations.Dims()
+	rows, columns := t.Dims()
 	// This function is `1/2 * SUM((a - y)^2)`, being its derivative wrt `a` = `(a - y)`.
 	// So just for the sake of being clean, this one is = 1/2 * SUM(gradients * gradients).
 	// First, calculate the gradient and square it.
-	difference := mat.NewDense(rows, columns, nil)
-	hse.Gradient(finalActivations, expectedActivations, difference)
-	difference.MulElem(difference, difference)
+	difference := hse.Gradient(a, t, mat.NewDense(rows, columns, nil))
 	// Now we sum the elements and halve them
-	return mat.Sum(difference) / 2.0
+	return mat.Sum(ops.H(difference, difference, difference)) / 2.0
 }
-func (hse HalfSquaredError) Gradient(finalActivations, expectedActivations, gradient *mat.Dense) {
-	// The gradient of the HSE is the difference.
-	gradient.Sub(expectedActivations, finalActivations)
+func (hse HalfSquaredError) Gradient(a, t, dc_da *mat.Dense) *mat.Dense {
+	// The dc_da of the HSE is the difference.
+	return ops.Sub(t, a, dc_da)
 }
 
 

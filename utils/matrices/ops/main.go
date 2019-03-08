@@ -22,6 +22,11 @@ func Sub(a, b, result *mat.Dense) *mat.Dense {
 	return result
 }
 
+func Scale(f float64, a, result *mat.Dense) *mat.Dense {
+	result.Scale(f, a)
+	return result
+}
+
 func Apply(f func(i, j int, v float64) float64, a, result *mat.Dense) *mat.Dense {
 	result.Apply(f, a)
 	return result
