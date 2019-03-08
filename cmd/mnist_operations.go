@@ -1,7 +1,7 @@
-package DraGoNNs
+package cmd
 
 import (
-	"./ffnn"
+	"../ffnn"
 	"os"
 	"encoding/csv"
 	"bufio"
@@ -43,7 +43,7 @@ func makePair(record []string) (*mat.Dense, *mat.Dense) {
 }
 
 
-func trainMNISTNetwork(network *ffnn.FFNetwork) {
+func TrainMNISTNetwork(network *ffnn.FFNetwork) {
 	fmt.Println("Starting the training.")
 	t1 := time.Now()
 	for epochs := 0; epochs < 5; epochs++ {
@@ -71,7 +71,7 @@ func trainMNISTNetwork(network *ffnn.FFNetwork) {
 }
 
 
-func testMNISTNetwork(network *ffnn.FFNetwork) {
+func TestMNISTNetwork(network *ffnn.FFNetwork) {
 	t1 := time.Now()
 	if testFile, err := os.Open(TestingFile); err == nil {
 		fmt.Println("Starting test.")

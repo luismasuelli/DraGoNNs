@@ -1,23 +1,23 @@
-package DraGoNNs
+package cmd
 
 
-import "./ffnn"
+import "../ffnn"
 
 
 const Filename = "./network"
 
 
-func newMNISTNetwork() *ffnn.FFNetwork {
+func NewMNISTNetwork() *ffnn.FFNetwork {
 	networkBuilder := ffnn.New(0.01, 784, ffnn.HalfSquaredError{})
 	networkBuilder.AddLayer(200, ffnn.Sigmoid{})
 	networkBuilder.AddLayer(10, ffnn.Sigmoid{})
 	return networkBuilder.Build()
 }
 
-func saveMNISTNetwork(network *ffnn.FFNetwork) error {
+func SaveMNISTNetwork(network *ffnn.FFNetwork) error {
 	return ffnn.Save(network, Filename)
 }
 
-func loadMNISTNetwork() (*ffnn.FFNetwork, error) {
+func LoadMNISTNetwork() (*ffnn.FFNetwork, error) {
 	return ffnn.Load(Filename)
 }
