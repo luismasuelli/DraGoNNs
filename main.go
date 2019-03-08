@@ -65,11 +65,12 @@ func menu() {
 			case "t":
 				testExisting()
 			case "q":
-				break
+				fmt.Println("Have a nice day!")
+				return
 			}
 		} else {
 			fmt.Printf("Breaking in menu due to error : %v", err)
-			break
+			return
 		}
 	}
 }
