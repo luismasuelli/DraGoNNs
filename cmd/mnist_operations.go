@@ -76,31 +76,29 @@ func TestMNISTNetwork(network *ffnn.FFNetwork) {
 	if testFile, err := os.Open(TestingFile); err == nil {
 		fmt.Println("Starting test.")
 		csvReader := csv.NewReader(bufio.NewReader(testFile))
-		score := 0
+		scores := make([]float64, 64)
+		index := 0
 		for {
 			record, err := csvReader.Read()
 			if err == io.EOF {
 				break
 			}
 
-			outputs := network.Forward(makeInput(record))
-			rows, _ := outputs.Dims()
+			inputs, expectedOutputs := makePair(record)
+			outputs, cost := network.Test(inputs, expectedOutputs)
+			// Tailing the cost
+			index++
+			if index == 64 {
+				index = 0
+			}
+			scores[index] = cost
 
-			best := 0
-			highest := 0.0
-			for i := 0; i < rows; i++ {
-				if outputs.At(i, 0) > highest {
-					best = i
-					highest = outputs.At(i, 0)
-				}
-			}
-			target, _ := strconv.Atoi(record[0])
-			if best == target {
-				score++
-			}
+			// Displaying the output and cost
+			fmt.Printf("Case:\n  Expected: %v\n  Output %v\n  Cost: %v\n", expectedOutputs, outputs, cost)
 		}
 		elapsed := time.Since(t1)
 		fmt.Printf("Test ended. Time taken to check: %s\n", elapsed)
-		fmt.Println("score:", score)
+		fmt.Printf("Last 64 scores: %v\n", scores)
+		fmt.Println("Avg score of last 64 cases:", mat.Sum(mat.NewDense(1, 64, scores)) / 64)
 	}
 }
