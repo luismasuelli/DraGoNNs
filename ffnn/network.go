@@ -2,9 +2,9 @@ package ffnn
 
 import "gonum.org/v1/gonum/mat"
 
-type SimpleFFNetwork struct {
+type FFNetwork struct {
 	// The layers, in strict order.
-	layers []*SimpleFFLayer
+	layers []*FFLayer
 	// ********************************
 	// Training-related fields start here.
 	// ********************************
@@ -22,15 +22,15 @@ type SimpleFFNetwork struct {
 	errorsOverWeightedInputs []*mat.Dense
 }
 
-func (network *SimpleFFNetwork) Layer(index int) *SimpleFFLayer {
+func (network *FFNetwork) Layer(index int) *FFLayer {
 	return network.layers[index]
 }
 
-func (network *SimpleFFNetwork) DefaultLearningRate() float64 {
+func (network *FFNetwork) DefaultLearningRate() float64 {
 	return network.defaultLearningRate
 }
 
-func (network *SimpleFFNetwork) Forward(input *mat.Dense) {
+func (network *FFNetwork) Forward(input *mat.Dense) {
 	for _, layer := range network.layers {
 		layer.Forward(input)
 		input = layer.activations
@@ -39,7 +39,7 @@ func (network *SimpleFFNetwork) Forward(input *mat.Dense) {
 }
 
 // Gradient(network.errorMetric)(layer.activations, expected) -> stored in networks' output activations cost gradient
-func (network *SimpleFFNetwork) costGradientOverOutputActivations(layer *SimpleFFLayer, layerIndex int, expectedOutputActivations *mat.Dense) *mat.Dense {
+func (network *FFNetwork) costGradientOverOutputActivations(layer *FFLayer, layerIndex int, expectedOutputActivations *mat.Dense) *mat.Dense {
 	activationCostGradients := network.activationsCostGradients[layerIndex]
 	// op1 Matrix size: (layer.outputSize rows, 1 column)
 	// op2 Matrix size: (layer.outputSize rows, 1 column)
@@ -50,7 +50,7 @@ func (network *SimpleFFNetwork) costGradientOverOutputActivations(layer *SimpleF
 }
 
 // Recursive error calculation
-func (network *SimpleFFNetwork) propagatedCostGradient(layerIndex int, nextLayerErrors *mat.Dense) *mat.Dense {
+func (network *FFNetwork) propagatedCostGradient(layerIndex int, nextLayerErrors *mat.Dense) *mat.Dense {
 	nextLayer := network.layers[layerIndex + 1]
 	nextLayerTransposedWeights := nextLayer.weights.T()
 	activationCostGradients := network.activationsCostGradients[layerIndex]
@@ -63,7 +63,7 @@ func (network *SimpleFFNetwork) propagatedCostGradient(layerIndex int, nextLayer
 }
 
 // Derivative(layer.Activation)(layer.weightedInputs) -> stored in corresponding activator's derivative result
-func (network *SimpleFFNetwork) activationDerivativeOverWeightedInputs(layer *SimpleFFLayer, layerIndex int) *mat.Dense {
+func (network *FFNetwork) activationDerivativeOverWeightedInputs(layer *FFLayer, layerIndex int) *mat.Dense {
 	output := network.activatorDerivativeResultsOverWeightedInputs[layerIndex]
 	// Op1 Matrix Size: (layer.outputSize rows, 1 column)
 	// Result Matrix Size: (layer.outputSize rows, 1 column)
@@ -73,7 +73,7 @@ func (network *SimpleFFNetwork) activationDerivativeOverWeightedInputs(layer *Si
 }
 
 // This is the first differential error being calculated. It will imply the gradient function over the costs.
-func (network *SimpleFFNetwork) differentialErrorFromOutputs(
+func (network *FFNetwork) differentialErrorFromOutputs(
 	lastLayerIndex int, expectedOutputActivations *mat.Dense,
 ) *mat.Dense {
 	// Consider z = weighted inputs
@@ -104,7 +104,7 @@ func (network *SimpleFFNetwork) differentialErrorFromOutputs(
 
 // This is the second, and more, differential error(s) being calculated. It will imply the weights of the following
 //   layer, and the errors from the following layer.
-func (network *SimpleFFNetwork) differentialErrorsFromFollowingLayer(
+func (network *FFNetwork) differentialErrorsFromFollowingLayer(
 	layerIndex int,
 ) *mat.Dense {
 	layer := network.layers[layerIndex]
@@ -127,7 +127,7 @@ func (network *SimpleFFNetwork) differentialErrorsFromFollowingLayer(
 }
 
 // Now, to fix the layers!
-func (network *SimpleFFNetwork) fixLayer(layerIndex int, learningRate float64) {
+func (network *FFNetwork) fixLayer(layerIndex int, learningRate float64) {
 	layer := network.layers[layerIndex]
 	weights := layer.weights
 
@@ -147,7 +147,7 @@ func (network *SimpleFFNetwork) fixLayer(layerIndex int, learningRate float64) {
 	weights.Sub(weights, errorOnInputs)
 }
 
-func (network *SimpleFFNetwork) TrainWithRate(input *mat.Dense, expectedOutput *mat.Dense, learningRate float64) (*mat.Dense, float64) {
+func (network *FFNetwork) TrainWithRate(input *mat.Dense, expectedOutput *mat.Dense, learningRate float64) (*mat.Dense, float64) {
 	// Get the outputs by running a normal forward, and the cost (absolute error)
 	network.Forward(input)
 	layersCount := len(network.layers)
@@ -165,6 +165,6 @@ func (network *SimpleFFNetwork) TrainWithRate(input *mat.Dense, expectedOutput *
 	return output, cost
 }
 
-func (network *SimpleFFNetwork) Train(input *mat.Dense, expectedOutput *mat.Dense) (*mat.Dense, float64) {
+func (network *FFNetwork) Train(input *mat.Dense, expectedOutput *mat.Dense) (*mat.Dense, float64) {
 	return network.TrainWithRate(input, expectedOutput, network.defaultLearningRate)
 }

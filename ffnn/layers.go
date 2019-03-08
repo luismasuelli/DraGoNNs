@@ -7,7 +7,7 @@ import (
 	"io"
 )
 
-type SimpleFFLayer struct {
+type FFLayer struct {
 	// Size of the input this layer requires
 	inputSize int
 	// Size of the output this layer brings
@@ -32,7 +32,7 @@ type SimpleFFLayer struct {
 	activations *mat.Dense
 }
 
-func makeSimpleFFLayer(inputSize, outputSize int, activator Activator, weights *mat.Dense) *SimpleFFLayer {
+func makeFFLayer(inputSize, outputSize int, activator Activator, weights *mat.Dense) *FFLayer {
 	// Creating an undefined input layer, aside from forcing it to 1 in the last element (the bias)
 	inputs := mat.NewDense(inputSize + 1, 1, nil)
 	inputs.Set(inputSize, 0, 1)
@@ -41,7 +41,7 @@ func makeSimpleFFLayer(inputSize, outputSize int, activator Activator, weights *
 	// Creating an undefined activations layer
 	activations := mat.NewDense(outputSize, 1, nil)
 
-	return &SimpleFFLayer{
+	return &FFLayer{
 		inputSize:      inputSize,
 		outputSize:     outputSize,
 		weights:        weights,
@@ -52,70 +52,70 @@ func makeSimpleFFLayer(inputSize, outputSize int, activator Activator, weights *
 	}
 }
 
-func newSimpleFFLayer(inputSize, outputSize int, activator Activator) *SimpleFFLayer {
+func newFFLayer(inputSize, outputSize int, activator Activator) *FFLayer {
 	// Creating a noisy weights layer
 	weights := matrices.Noise(outputSize, inputSize + 1, 1.0/math.Sqrt(float64(inputSize)))
-	return makeSimpleFFLayer(inputSize, outputSize, activator, weights)
+	return makeFFLayer(inputSize, outputSize, activator, weights)
 }
 
-func loadSimpleFFLayer(inputSize, outputSize int, activator Activator, reader io.Reader) (*SimpleFFLayer, error) {
+func loadFFLayer(inputSize, outputSize int, activator Activator, reader io.Reader) (*FFLayer, error) {
 	// Loading the weights from a file
-	weights := mat.NewDense(outputSize, 1, nil)
+	weights := mat.NewDense(outputSize, inputSize + 1, nil)
 	if _, err := weights.UnmarshalBinaryFrom(reader); err != nil {
 		return nil, err
 	} else {
-		return makeSimpleFFLayer(inputSize, outputSize, activator, weights), nil
+		return makeFFLayer(inputSize, outputSize, activator, weights), nil
 	}
 }
 
-func saveSimpleFFLayer(layer *SimpleFFLayer, writer io.Writer) error {
+func saveFFLayer(layer *FFLayer, writer io.Writer) error {
 	_, err := layer.weights.MarshalBinaryTo(writer)
 	return err
 }
 
-func decodeSimpleFFLayer(inputSize, outputSize int, activator Activator, data []byte) (*SimpleFFLayer, error) {
+func decodeFFLayer(inputSize, outputSize int, activator Activator, data []byte) (*FFLayer, error) {
 	// Loading the weights from memory
-	weights := mat.NewDense(outputSize, 1, nil)
+	weights := mat.NewDense(outputSize, inputSize + 1, nil)
 	if err := weights.UnmarshalBinary(data); err != nil {
 		return nil, err
 	} else {
-		return makeSimpleFFLayer(inputSize, outputSize, activator, weights), nil
+		return makeFFLayer(inputSize, outputSize, activator, weights), nil
 	}
 }
 
-func encodeSimpleFFLayer(layer *SimpleFFLayer) ([]byte, error) {
+func encodeFFLayer(layer *FFLayer) ([]byte, error) {
 	return layer.weights.MarshalBinary()
 }
 
-func (layer *SimpleFFLayer) InputSize() int {
+func (layer *FFLayer) InputSize() int {
 	return layer.inputSize
 }
 
-func (layer *SimpleFFLayer) OutputSize() int {
+func (layer *FFLayer) OutputSize() int {
 	return layer.outputSize
 }
 
-func (layer *SimpleFFLayer) Weights() *mat.Dense {
+func (layer *FFLayer) Weights() *mat.Dense {
 	return layer.weights
 }
 
-func (layer *SimpleFFLayer) Inputs() *mat.Dense {
+func (layer *FFLayer) Inputs() *mat.Dense {
 	return layer.inputs;
 }
 
-func (layer *SimpleFFLayer) WeightedInputs() *mat.Dense {
+func (layer *FFLayer) WeightedInputs() *mat.Dense {
 	return layer.weightedInputs
 }
 
-func (layer *SimpleFFLayer) Activator() Activator {
+func (layer *FFLayer) Activator() Activator {
 	return layer.activator
 }
 
-func (layer *SimpleFFLayer) Activations() *mat.Dense {
+func (layer *FFLayer) Activations() *mat.Dense {
 	return layer.activations
 }
 
-func (layer *SimpleFFLayer) Forward(inputs *mat.Dense) {
+func (layer *FFLayer) Forward(inputs *mat.Dense) {
 	// `inputs` will be a column, compatible with (inputSize, 1).
 	// Fill the new inputs.
 	for index := 0; index < layer.inputSize; index++ {
