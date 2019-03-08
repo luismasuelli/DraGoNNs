@@ -18,7 +18,7 @@ type serializedFFNetwork struct {
 	errorMetric         string
 	defaultLearningRate float64
 	inputSize           int
-	layers              []serializedFFLayer
+	layers              []*serializedFFLayer
 }
 func withExtension(filename string, extension string) string {
 	if strings.Trim(filename, " \r\n\t") == "" {
@@ -123,14 +123,14 @@ func Save(network *FFNetwork, filename string) (error) {
 	serialized := serializedFFNetwork{
 		defaultLearningRate: network.defaultLearningRate,
 		inputSize: network.layers[0].inputSize,
-		layers: make([]serializedFFLayer, len(network.layers)),
+		layers: make([]*serializedFFLayer, len(network.layers)),
 		errorMetric: network.errorMetric.Name(),
 	}
 	for index, layer := range network.layers {
 		if weightsData, err := encodeFFLayer(layer); err != nil {
 			return err
 		} else {
-			serialized.layers[index] = serializedFFLayer{
+			serialized.layers[index] = &serializedFFLayer{
 				activator: layer.activator.Name(),
 				outputSize: layer.outputSize,
 				weightsData: weightsData,
@@ -151,7 +151,7 @@ type FFNetworkBuilder struct {
 	defaultLearningRate float64
 	inputSize int
 	errorMetric ErrorMetric
-	layers []FFLayerSpec
+	layers []*FFLayerSpec
 }
 
 
@@ -172,7 +172,7 @@ func New(defaultLearningRate float64, inputSize int, errorMetric ErrorMetric) *F
 		inputSize: inputSize,
 		defaultLearningRate: defaultLearningRate,
 		errorMetric: errorMetric,
-		layers: make([]FFLayerSpec, 2),
+		layers: make([]*FFLayerSpec, 0),
 	}
 }
 
@@ -186,7 +186,7 @@ func (builder *FFNetworkBuilder) AddLayer(outputSize int, activator Activator) *
 		activator = GetActivator("_default")
 	}
 
-	builder.layers = append(builder.layers, FFLayerSpec{
+	builder.layers = append(builder.layers, &FFLayerSpec{
 		outputSize: outputSize,
 		activator: activator,
 	})
