@@ -141,3 +141,84 @@ func Save(network *FFNetwork, filename string) (error) {
 	encoder := json.NewEncoder(file)
 	return encoder.Encode(&serialized)
 }
+
+
+type FFLayerSpec struct {
+	outputSize int
+	activator Activator
+}
+type FFNetworkBuilder struct {
+	defaultLearningRate float64
+	inputSize int
+	errorMetric ErrorMetric
+	layers []FFLayerSpec
+}
+
+
+func New(defaultLearningRate float64, inputSize int, errorMetric ErrorMetric) *FFNetworkBuilder {
+	if inputSize < 1 {
+		panic("input size must be >= 1")
+	}
+
+	if defaultLearningRate <= 0 {
+		panic("learning rate must be positive (and, preferably, small)")
+	}
+
+	if errorMetric == nil {
+		errorMetric = GetErrorMetric("_default")
+	}
+
+	return &FFNetworkBuilder{
+		inputSize: inputSize,
+		defaultLearningRate: defaultLearningRate,
+		errorMetric: errorMetric,
+		layers: make([]FFLayerSpec, 2),
+	}
+}
+
+
+func (builder *FFNetworkBuilder) AddLayer(outputSize int, activator Activator) *FFNetworkBuilder {
+	if outputSize < 1 {
+		panic("output size must be >= 1")
+	}
+
+	if activator == nil {
+		activator = GetActivator("_default")
+	}
+
+	builder.layers = append(builder.layers, FFLayerSpec{
+		outputSize: outputSize,
+		activator: activator,
+	})
+	return builder
+}
+
+
+func (builder *FFNetworkBuilder) CanBuild() bool {
+	return len(builder.layers) > 0
+}
+
+
+func (builder *FFNetworkBuilder) Build() *FFNetwork {
+	layersCount := len(builder.layers)
+	if layersCount == 0 {
+		panic("this builder must specify at least one layer")
+	}
+
+	network := &FFNetwork{
+		defaultLearningRate: builder.defaultLearningRate,
+		errorMetric: builder.errorMetric,
+		layers: make([]*FFLayer, layersCount),
+		activatorDerivativeResultsOverWeightedInputs: make([]*mat.Dense, layersCount),
+		activationsCostGradients: make([]*mat.Dense, layersCount),
+		errorsOverWeightedInputs: make([]*mat.Dense, layersCount),
+	}
+
+	inputSize := builder.inputSize
+	for index, layerSpec := range builder.layers {
+		network.layers[index] = newFFLayer(inputSize, layerSpec.outputSize, layerSpec.activator)
+		inputSize = layerSpec.outputSize
+	}
+
+	return network
+}
