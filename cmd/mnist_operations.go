@@ -85,7 +85,7 @@ func TestMNISTNetwork(network *ffnn.FFNetwork) {
 			}
 
 			inputs, expectedOutputs := makePair(record)
-			outputs, cost := network.Test(inputs, expectedOutputs)
+			_, cost := network.Test(inputs, expectedOutputs)
 			// Tailing the cost
 			index++
 			if index == 64 {
@@ -94,7 +94,7 @@ func TestMNISTNetwork(network *ffnn.FFNetwork) {
 			scores[index] = cost
 
 			// Displaying the output and cost
-			fmt.Printf("Case:\n  Expected: %v\n  Output %v\n  Cost: %v\n", expectedOutputs, outputs, cost)
+			// fmt.Printf("Case:\n  Expected: %v\n  Output %v\n  Cost: %v\n", expectedOutputs, outputs, cost)
 		}
 		elapsed := time.Since(t1)
 		fmt.Printf("Test ended. Time taken to check: %s\n", elapsed)
