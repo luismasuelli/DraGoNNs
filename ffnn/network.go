@@ -12,8 +12,8 @@ type FFNetwork struct {
 	defaultLearningRate float64
 	// The cost (error) function for the training.
 	errorMetric ErrorMetric
-	// While the cost gradients go for the output layer, these ones go
-	//   for the middle layer(s).
+	// These hold the gradient costs for the layers; these ones go
+	//   for all the layer(s).
 	activationsCostGradients []*mat.Dense
 	// Per-layer activator-derivative over weighted inputs. Will have
 	//  the sizes of corresponding layers' weighted inputs.
