@@ -217,6 +217,10 @@ func (builder *FFNetworkBuilder) Build() *FFNetwork {
 	inputSize := builder.inputSize
 	for index, layerSpec := range builder.layers {
 		network.layers[index] = newFFLayer(inputSize, layerSpec.outputSize, layerSpec.activator)
+		// here we create the training matrices
+		network.activatorDerivativeResultsOverWeightedInputs[index] = mat.NewDense(layerSpec.outputSize, 1, nil)
+		network.activationsCostGradients[index] = mat.NewDense(layerSpec.outputSize, 1, nil)
+		network.errorsOverWeightedInputs[index] = mat.NewDense(layerSpec.outputSize, 1, nil)
 		inputSize = layerSpec.outputSize
 	}
 
