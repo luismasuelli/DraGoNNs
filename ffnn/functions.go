@@ -20,7 +20,7 @@ type Activator interface {
 }
 
 
-// An example activator will be the Sigmoid
+// An example f will be the Sigmoid
 func sigmoid(i, j int, x float64) float64 {
 	return 1.0 / (1.0 + math.Exp(-x))
 }
@@ -75,7 +75,7 @@ func (hse HalfSquaredError) Base(a, t *mat.Dense) float64 {
 	return mat.Sum(ops.H(difference, difference, difference)) / 2.0
 }
 func (hse HalfSquaredError) Gradient(a, t, dc_da *mat.Dense) *mat.Dense {
-	// The dc_da of the HSE is the difference.
+	// The rDcDa of the HSE is the difference.
 	return ops.Sub(t, a, dc_da)
 }
 

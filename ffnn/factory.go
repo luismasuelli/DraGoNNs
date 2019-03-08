@@ -10,12 +10,13 @@ import (
 
 
 type serializedFFLayer struct {
-	Activator           string
-	OutputSize          int
-	WeightsData         []byte
+	F          string
+	OutputSize int
+	W          []byte
+	B          []byte
 }
 type serializedFFNetwork struct {
-	ErrorMetric         string
+	C                   string
 	DefaultLearningRate float64
 	InputSize           int
 	Layers              []*serializedFFLayer
@@ -30,9 +31,9 @@ func withExtension(filename string, extension string) string {
 	}
 	return filename
 }
-func loadLayer(inputSize int, outputSize int, activator Activator, marshaled []byte) (*FFLayer, error) {
+func loadLayer(inputSize int, outputSize int, activator Activator, wMarshaled, bMarshalled []byte) (*FFLayer, error) {
 	// Read everything
-	return decodeFFLayer(inputSize, outputSize, activator, marshaled)
+	return decodeFFLayer(inputSize, outputSize, activator, wMarshaled, bMarshalled)
 }
 
 
@@ -72,11 +73,11 @@ func Load(filename string) (*FFNetwork, error) {
 
 	network := &FFNetwork{
 		defaultLearningRate: serialized.DefaultLearningRate,
-		errorMetric: GetErrorMetric(serialized.ErrorMetric),
-		layers: make([]*FFLayer, layersCount),
-		activatorDerivativeResultsOverWeightedInputs: make([]*mat.Dense, layersCount),
-		activationsCostGradients: make([]*mat.Dense, layersCount),
-		errorsOverWeightedInputs: make([]*mat.Dense, layersCount),
+		c:                   GetErrorMetric(serialized.C),
+		layers:              make([]*FFLayer, layersCount),
+		rDaDz:               make([]*mat.Dense, layersCount),
+		rDcDa:               make([]*mat.Dense, layersCount),
+		dirac:               make([]*mat.Dense, layersCount),
 	}
 
 	inputSize := serialized.InputSize
@@ -85,16 +86,16 @@ func Load(filename string) (*FFNetwork, error) {
 		if outputSize < 1 {
 			return nil, errors.New("output size must be >= 1")
 		}
-		activator := GetActivator(serializedLayer.Activator)
+		activator := GetActivator(serializedLayer.F)
 
-		if layer, err := loadLayer(inputSize, outputSize, activator, serializedLayer.WeightsData); err != nil {
+		if layer, err := loadLayer(inputSize, outputSize, activator, serializedLayer.W, serializedLayer.B); err != nil {
 			return nil, err
 		} else {
 			network.layers[index] = layer
 			// here we create the training matrices
-			network.activatorDerivativeResultsOverWeightedInputs[index] = mat.NewDense(outputSize, 1, nil)
-			network.activationsCostGradients[index] = mat.NewDense(outputSize, 1, nil)
-			network.errorsOverWeightedInputs[index] = mat.NewDense(outputSize, 1, nil)
+			network.rDaDz[index] = mat.NewDense(outputSize, 1, nil)
+			network.rDcDa[index] = mat.NewDense(outputSize, 1, nil)
+			network.dirac[index] = mat.NewDense(outputSize, 1, nil)
 		}
 
 		// output size is the new input size
@@ -122,18 +123,23 @@ func Save(network *FFNetwork, filename string) (error) {
 
 	serialized := serializedFFNetwork{
 		DefaultLearningRate: network.defaultLearningRate,
-		InputSize: network.layers[0].inputSize,
-		Layers: make([]*serializedFFLayer, len(network.layers)),
-		ErrorMetric: network.errorMetric.Name(),
+		InputSize:           network.layers[0].inputSize,
+		Layers:              make([]*serializedFFLayer, len(network.layers)),
+		C:                   network.c.Name(),
 	}
 	for index, layer := range network.layers {
-		if weightsData, err := encodeFFLayer(layer); err != nil {
-			return err
+		if weightsData, biasesData, errW, errB := encodeFFLayer(layer); errW != nil || errB != nil {
+			if errW != nil {
+				return errW
+			} else {
+				return errB
+			}
 		} else {
 			serialized.Layers[index] = &serializedFFLayer{
-				Activator: layer.activator.Name(),
+				F:          layer.f.Name(),
 				OutputSize: layer.outputSize,
-				WeightsData: weightsData,
+				W:          weightsData,
+				B:          biasesData,
 			}
 		}
 	}
@@ -207,20 +213,20 @@ func (builder *FFNetworkBuilder) Build() *FFNetwork {
 
 	network := &FFNetwork{
 		defaultLearningRate: builder.defaultLearningRate,
-		errorMetric: builder.errorMetric,
-		layers: make([]*FFLayer, layersCount),
-		activatorDerivativeResultsOverWeightedInputs: make([]*mat.Dense, layersCount),
-		activationsCostGradients: make([]*mat.Dense, layersCount),
-		errorsOverWeightedInputs: make([]*mat.Dense, layersCount),
+		c:                   builder.errorMetric,
+		layers:              make([]*FFLayer, layersCount),
+		rDaDz:               make([]*mat.Dense, layersCount),
+		rDcDa:               make([]*mat.Dense, layersCount),
+		dirac:               make([]*mat.Dense, layersCount),
 	}
 
 	inputSize := builder.inputSize
 	for index, layerSpec := range builder.layers {
 		network.layers[index] = newFFLayer(inputSize, layerSpec.outputSize, layerSpec.activator)
 		// here we create the training matrices
-		network.activatorDerivativeResultsOverWeightedInputs[index] = mat.NewDense(layerSpec.outputSize, 1, nil)
-		network.activationsCostGradients[index] = mat.NewDense(layerSpec.outputSize, 1, nil)
-		network.errorsOverWeightedInputs[index] = mat.NewDense(layerSpec.outputSize, 1, nil)
+		network.rDaDz[index] = mat.NewDense(layerSpec.outputSize, 1, nil)
+		network.rDcDa[index] = mat.NewDense(layerSpec.outputSize, 1, nil)
+		network.dirac[index] = mat.NewDense(layerSpec.outputSize, 1, nil)
 		inputSize = layerSpec.outputSize
 	}
 
