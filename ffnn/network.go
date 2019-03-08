@@ -154,12 +154,14 @@ func (network *FFNetwork) fixLayer(layerIndex int, learningRate float64) {
 	weights.Sub(weights, errorOnInputs)
 }
 
-func (network *FFNetwork) TrainWithRate(input *mat.Dense, expectedOutput *mat.Dense, learningRate float64) (*mat.Dense, float64) {
+func (network *FFNetwork) Test(input *mat.Dense, expectedOutput *mat.Dense) (*mat.Dense, float64) {
 	// Get the outputs by running a normal forward, and the cost (absolute error)
 	output := network.Forward(input)
+	return output, network.errorMetric.Base(output, expectedOutput)
+}
+
+func (network *FFNetwork) adjust(expectedOutput *mat.Dense, learningRate float64) {
 	layersCount := len(network.layers)
-	cost := network.errorMetric.Base(output, expectedOutput)
-	// Now compute the errors backward, and adjust using a learning rate
 	network.differentialErrorFromOutputs(layersCount - 1, expectedOutput)
 	for index := layersCount - 2; index >= 0; index-- {
 		network.differentialErrorsFromFollowingLayer(index)
@@ -168,6 +170,13 @@ func (network *FFNetwork) TrainWithRate(input *mat.Dense, expectedOutput *mat.De
 	for index := 0; index < layersCount; index++ {
 		network.fixLayer(index, learningRate)
 	}
+}
+
+func (network *FFNetwork) TrainWithRate(input *mat.Dense, expectedOutput *mat.Dense, learningRate float64) (*mat.Dense, float64) {
+	// Get the outputs by running a normal forward, and the cost (absolute error)
+	output, cost := network.Test(input, expectedOutput)
+	// Now compute the errors backward, and adjust using a learning rate
+	network.adjust(expectedOutput, learningRate)
 	return output, cost
 }
 
