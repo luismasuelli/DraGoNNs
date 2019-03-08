@@ -1,6 +1,8 @@
 package ffnn
 
-import "gonum.org/v1/gonum/mat"
+import (
+	"gonum.org/v1/gonum/mat"
+)
 
 type FFNetwork struct {
 	// The layers, in strict order.
@@ -55,7 +57,9 @@ func (network *FFNetwork) costGradientOverOutputActivations(layer *FFLayer, laye
 // Recursive error calculation
 func (network *FFNetwork) propagatedCostGradient(layerIndex int, nextLayerErrors *mat.Dense) *mat.Dense {
 	nextLayer := network.layers[layerIndex + 1]
-	nextLayerTransposedWeights := nextLayer.weights.T()
+	nextWeights := nextLayer.weights
+	weightRows, weightColumns := nextWeights.Dims()
+	nextLayerTransposedWeights := nextWeights.Slice(0, weightRows, 0, weightColumns - 1).T()
 	activationCostGradients := network.activationsCostGradients[layerIndex]
 	// Op1 Matrix Size: (nextLayer.inputSize = layer.outputSize rows, nextLayer.outputSize columns)
 	// Op2 Matrix Size: (nextLayer.outputSize rows, 1 column)
@@ -157,7 +161,7 @@ func (network *FFNetwork) TrainWithRate(input *mat.Dense, expectedOutput *mat.De
 	cost := network.errorMetric.Base(output, expectedOutput)
 	// Now compute the errors backward, and adjust using a learning rate
 	network.differentialErrorFromOutputs(layersCount - 1, expectedOutput)
-	for index := layersCount - 2; index >= 0; index++ {
+	for index := layersCount - 2; index >= 0; index-- {
 		network.differentialErrorsFromFollowingLayer(index)
 	}
 	// And finally, after we know all the errors (which are vertical rows), fix the layers
