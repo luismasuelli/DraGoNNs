@@ -10,6 +10,8 @@ import (
 // It MUST operate element-wise, and so the matrices
 //   WILL have matching dimensions
 type Activator interface {
+	// Function name (key)
+	Name() string
 	// The base function
 	Base(*mat.Dense, *mat.Dense)
 	// The derivative
@@ -22,6 +24,9 @@ func sigmoid(i, j int, x float64) float64 {
 	return 1.0 / (1.0 + math.Exp(-x))
 }
 type Sigmoid struct{}
+func (s Sigmoid) Name() string {
+	return "Sigmoid"
+}
 func (s Sigmoid) Base(source, destination *mat.Dense) {
 	destination.Apply(sigmoid, source)
 }
@@ -44,6 +49,8 @@ func (s Sigmoid) Derivative(source, destination *mat.Dense) {
 // This error metric is intended to be calculated on
 //   the activations (final values) against the expected ones.
 type ErrorMetric interface {
+	// Function name (key)
+	Name() string
 	// The base function
 	Base(finalActivations, expectedActivations *mat.Dense) float64
 	// The derivative, intended to be computed into an existing matrix
@@ -53,6 +60,9 @@ type ErrorMetric interface {
 
 // An example error metric is the halved squared error
 type HalfSquaredError struct{}
+func (hse HalfSquaredError) Name() string {
+	return "HalfSquaredError"
+}
 func (hse HalfSquaredError) Base(finalActivations, expectedActivations *mat.Dense) float64 {
 	// This function is for a single training example. For batches of N elements,
 	//   this value must be summed among them and then divided by N. This is the
@@ -75,15 +85,16 @@ func (hse HalfSquaredError) Gradient(finalActivations, expectedActivations, grad
 
 var activators = map[string]Activator{
 	"_default": Sigmoid{},
-	"sigmoid": Sigmoid{},
+	"Sigmoid": Sigmoid{},
 }
 
 var errorMetrics = map[string]ErrorMetric{
 	"_default": HalfSquaredError{},
-	"HalSquaredError": HalfSquaredError{},
+	"HalfSquaredError": HalfSquaredError{},
 }
 
-func RegisterActivator(name string, activator Activator) bool {
+func RegisterActivator(activator Activator) bool {
+	name := activator.Name()
 	if _, found := activators[name]; !found && activator != nil {
 		activators[name] = activator
 		return true
@@ -99,7 +110,8 @@ func GetActivator(name string) Activator {
 	}
 }
 
-func RegisterErrorMetric(name string, errorMetric ErrorMetric) bool {
+func RegisterErrorMetric(errorMetric ErrorMetric) bool {
+	name := errorMetric.Name()
 	if _, found := errorMetrics[name]; !found && errorMetric != nil {
 		errorMetrics[name] = errorMetric
 		return true
