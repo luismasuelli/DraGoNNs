@@ -5,6 +5,7 @@ import (
 	"../utils/matrices"
 	"math"
 	"io"
+	"errors"
 )
 
 type FFLayer struct {
@@ -61,9 +62,14 @@ func newFFLayer(inputSize, outputSize int, activator Activator) *FFLayer {
 func loadFFLayer(inputSize, outputSize int, activator Activator, reader io.Reader) (*FFLayer, error) {
 	// Loading the weights from a file
 	weights := mat.NewDense(outputSize, inputSize + 1, nil)
+	weights.Reset()
 	if _, err := weights.UnmarshalBinaryFrom(reader); err != nil {
 		return nil, err
 	} else {
+		rows, columns := weights.Dims()
+		if rows != outputSize || columns != inputSize + 1 {
+			return nil, errors.New("layer size mismatch between requested and unmarshaled")
+		}
 		return makeFFLayer(inputSize, outputSize, activator, weights), nil
 	}
 }
@@ -76,9 +82,14 @@ func saveFFLayer(layer *FFLayer, writer io.Writer) error {
 func decodeFFLayer(inputSize, outputSize int, activator Activator, data []byte) (*FFLayer, error) {
 	// Loading the weights from memory
 	weights := mat.NewDense(outputSize, inputSize + 1, nil)
+	weights.Reset()
 	if err := weights.UnmarshalBinary(data); err != nil {
 		return nil, err
 	} else {
+		rows, columns := weights.Dims()
+		if rows != outputSize || columns != inputSize + 1 {
+			return nil, errors.New("layer size mismatch between requested and unmarshaled")
+		}
 		return makeFFLayer(inputSize, outputSize, activator, weights), nil
 	}
 }
