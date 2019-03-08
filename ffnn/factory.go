@@ -6,13 +6,13 @@ import (
 	"errors"
 	"strings"
 	"gonum.org/v1/gonum/mat"
-	"fmt"
 )
 
 
 type serializedFFLayer struct {
 	activator           string
 	outputSize          int
+	weightsData         []byte
 }
 type serializedFFNetwork struct {
 	errorMetric         string
@@ -30,36 +30,19 @@ func withExtension(filename string, extension string) string {
 	}
 	return filename
 }
-func withoutExtension(filename string, extension string) string {
-	if strings.Trim(filename, " \r\n\t") == "" {
-		return ""
-	}
-
-	if strings.HasSuffix(filename, "." + extension) {
-		filename += strings.TrimSuffix(filename, "." + extension)
-	}
-	return filename
-}
-func loadLayer(index int, inputSize int, outputSize int, activator Activator, baseFilename string) (*FFLayer, error) {
-	// Open file for reading.
-	// For a filename being /path/to/filename.ffnn, this one will be
-	var file *os.File
-	var err error
-	var subName = withoutExtension(baseFilename, "ffnn") + fmt.Sprintf("-%v.fflayer", index)
-	if file, err = os.Open(subName); err != nil {
-		return nil, err
-	} else {
-		defer file.Close()
-	}
-
+func loadLayer(inputSize int, outputSize int, activator Activator, marshaled []byte) (*FFLayer, error) {
 	// Read everything
-	return loadFFLayer(inputSize, outputSize, activator, file)
+	return decodeFFLayer(inputSize, outputSize, activator, marshaled)
 }
 
 
 func Load(filename string) (*FFNetwork, error) {
-	// Open file for reading
 	filename = withExtension(filename, "ffnn")
+	if filename == "" {
+		return nil, errors.New("filename is empty")
+	}
+
+	// Open file for reading
 	var file *os.File
 	var err error
 	if file, err = os.Open(filename); err != nil {
@@ -104,7 +87,7 @@ func Load(filename string) (*FFNetwork, error) {
 		}
 		activator := GetActivator(serializedLayer.activator)
 
-		if layer, err := loadLayer(index, inputSize, outputSize, activator, filename); err != nil {
+		if layer, err := loadLayer(inputSize, outputSize, activator, serializedLayer.weightsData); err != nil {
 			return nil, err
 		} else {
 			network.layers[index] = layer
@@ -119,4 +102,42 @@ func Load(filename string) (*FFNetwork, error) {
 	}
 
 	return network, nil
+}
+
+
+func Save(network *FFNetwork, filename string) (error) {
+	filename = withExtension(filename, ".ffnn")
+	if network == nil {
+		return errors.New("network is nil")
+	}
+
+	// Open file for writing
+	var file *os.File
+	var err error
+	if file, err = os.Create(filename); err != nil {
+		return err
+	} else {
+		defer file.Close()
+	}
+
+	serialized := serializedFFNetwork{
+		defaultLearningRate: network.defaultLearningRate,
+		inputSize: network.layers[0].inputSize,
+		layers: make([]serializedFFLayer, len(network.layers)),
+		errorMetric: network.errorMetric.Name(),
+	}
+	for index, layer := range network.layers {
+		if weightsData, err := encodeFFLayer(layer); err != nil {
+			return err
+		} else {
+			serialized.layers[index] = serializedFFLayer{
+				activator: layer.activator.Name(),
+				outputSize: layer.outputSize,
+				weightsData: weightsData,
+			}
+		}
+	}
+
+	encoder := json.NewEncoder(file)
+	return encoder.Encode(&serialized)
 }
