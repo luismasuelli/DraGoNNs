@@ -50,11 +50,17 @@ func TrainMNISTNetwork(network *ffnn.FFNetwork) {
 		if trainFile, err := os.Open(TrainingFile); err == nil {
 			fmt.Println("Starting epoch.")
 			csvReader := csv.NewReader(bufio.NewReader(trainFile))
+			first := true
 			for {
 				var record []string
 				var err error
 				if record, err = csvReader.Read(); err != nil {
 					break
+				}
+
+				if first {
+					first = false
+					continue
 				}
 
 				// train the NN with that data
@@ -78,14 +84,32 @@ func TestMNISTNetwork(network *ffnn.FFNetwork) {
 		csvReader := csv.NewReader(bufio.NewReader(testFile))
 		scores := make([]float64, 64)
 		index := 0
+		first := true
 		for {
 			record, err := csvReader.Read()
 			if err == io.EOF {
 				break
 			}
 
+			if first {
+				first = false
+				continue
+			}
+
 			inputs, expectedOutputs := makePair(record)
-			_, cost := network.Test(inputs, expectedOutputs)
+			outputs, cost := network.Test(inputs, expectedOutputs)
+
+			// Get the highest output index
+			highestOutputIndex := -1
+			highestOutputValue := 0.0
+			for index := 0; index < 10; index++ {
+				value := outputs.At(index, 0)
+				if value > highestOutputValue {
+					highestOutputValue = value
+					highestOutputIndex = index
+				}
+			}
+
 			// Tailing the cost
 			index++
 			if index == 64 {
@@ -93,8 +117,7 @@ func TestMNISTNetwork(network *ffnn.FFNetwork) {
 			}
 			scores[index] = cost
 
-			// Displaying the output and cost
-			// fmt.Printf("Case:\n  Expected: %v\n  Output %v\n  Cost: %v\n", expectedOutputs, outputs, cost)
+			fmt.Printf("Case:\n  Expected: %v\n  Got: %v\n  Cost: %v\n", record[0], highestOutputIndex, cost)
 		}
 		elapsed := time.Since(t1)
 		fmt.Printf("Test ended. Time taken to check: %s\n", elapsed)
