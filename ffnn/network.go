@@ -30,12 +30,15 @@ func (network *FFNetwork) DefaultLearningRate() float64 {
 	return network.defaultLearningRate
 }
 
-func (network *FFNetwork) Forward(input *mat.Dense) {
+func (network *FFNetwork) Forward(input *mat.Dense) *mat.Dense {
 	for _, layer := range network.layers {
 		layer.Forward(input)
 		input = layer.activations
 	}
 	// After this, all the data will be available inside each layer
+	// And the paradoxical part is that `inputs` will hold the outputs
+	//   in the end
+	return input
 }
 
 // Gradient(network.errorMetric)(layer.activations, expected) -> stored in networks' output activations cost gradient
@@ -149,9 +152,8 @@ func (network *FFNetwork) fixLayer(layerIndex int, learningRate float64) {
 
 func (network *FFNetwork) TrainWithRate(input *mat.Dense, expectedOutput *mat.Dense, learningRate float64) (*mat.Dense, float64) {
 	// Get the outputs by running a normal forward, and the cost (absolute error)
-	network.Forward(input)
+	output := network.Forward(input)
 	layersCount := len(network.layers)
-	output := network.layers[layersCount - 1].activations
 	cost := network.errorMetric.Base(output, expectedOutput)
 	// Now compute the errors backward, and adjust using a learning rate
 	network.differentialErrorFromOutputs(layersCount - 1, expectedOutput)
