@@ -48,7 +48,7 @@ func TrainMNISTNetwork(network *ffnn.FFNetwork, epochs int) {
 	t1 := time.Now()
 	for epoch := 0; epoch < epochs; epoch++ {
 		if trainFile, err := os.Open(TrainingFile); err == nil {
-			fmt.Println("Starting epoch:", epochs)
+			fmt.Println("Starting epoch:", epoch)
 			csvReader := csv.NewReader(bufio.NewReader(trainFile))
 			first := true
 			index := 0
