@@ -76,7 +76,7 @@ func (hse HalfSquaredError) Base(a, t *mat.Dense) float64 {
 }
 func (hse HalfSquaredError) Gradient(a, t, dc_da *mat.Dense) *mat.Dense {
 	// The rDcDa of the HSE is the difference.
-	return ops.Sub(t, a, dc_da)
+	return ops.Sub(a, t, dc_da)
 }
 
 
