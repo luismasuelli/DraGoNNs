@@ -43,14 +43,15 @@ func makePair(record []string) (*mat.Dense, *mat.Dense) {
 }
 
 
-func TrainMNISTNetwork(network *ffnn.FFNetwork) {
-	fmt.Println("Starting the training.")
+func TrainMNISTNetwork(network *ffnn.FFNetwork, epochs int) {
+	fmt.Printf("Starting the training with %v epocs\n", epochs)
 	t1 := time.Now()
-	for epochs := 0; epochs < 5; epochs++ {
+	for epoch := 0; epoch < epochs; epoch++ {
 		if trainFile, err := os.Open(TrainingFile); err == nil {
-			fmt.Println("Starting epoch.")
+			fmt.Println("Starting epoch:", epochs)
 			csvReader := csv.NewReader(bufio.NewReader(trainFile))
 			first := true
+			index := 0
 			for {
 				var record []string
 				var err error
@@ -64,7 +65,11 @@ func TrainMNISTNetwork(network *ffnn.FFNetwork) {
 				}
 
 				// train the NN with that data
-				network.Train(makePair(record))
+				inputs, targets := makePair(record)
+				fmt.Printf("Training case %v (epoch %v):\n- Inputs: %v\n- Targets: %v\n",
+					       index, epoch, inputs, targets)
+				network.Train(inputs, targets)
+				index++
 			}
 			trainFile.Close()
 			fmt.Println("Epoch ended.")
@@ -73,7 +78,7 @@ func TrainMNISTNetwork(network *ffnn.FFNetwork) {
 		}
 	}
 	elapsed := time.Since(t1)
-	fmt.Printf("Training used 5 epochs and took: %s\n", elapsed)
+	fmt.Printf("Training used %v epoch and took: %v\n", epochs, elapsed)
 }
 
 
