@@ -77,7 +77,7 @@ func Load(filename string) (*FFNetwork, error) {
 		layers:              make([]*FFLayer, layersCount),
 		rDaDz:               make([]*mat.Dense, layersCount),
 		rDcDa:               make([]*mat.Dense, layersCount),
-		dirac:               make([]*mat.Dense, layersCount),
+		delta:               make([]*mat.Dense, layersCount),
 	}
 
 	inputSize := serialized.InputSize
@@ -95,7 +95,7 @@ func Load(filename string) (*FFNetwork, error) {
 			// here we create the training matrices
 			network.rDaDz[index] = mat.NewDense(outputSize, 1, nil)
 			network.rDcDa[index] = mat.NewDense(outputSize, 1, nil)
-			network.dirac[index] = mat.NewDense(outputSize, 1, nil)
+			network.delta[index] = mat.NewDense(outputSize, 1, nil)
 		}
 
 		// output size is the new input size
@@ -217,7 +217,7 @@ func (builder *FFNetworkBuilder) Build() *FFNetwork {
 		layers:              make([]*FFLayer, layersCount),
 		rDaDz:               make([]*mat.Dense, layersCount),
 		rDcDa:               make([]*mat.Dense, layersCount),
-		dirac:               make([]*mat.Dense, layersCount),
+		delta:               make([]*mat.Dense, layersCount),
 	}
 
 	inputSize := builder.inputSize
@@ -226,7 +226,7 @@ func (builder *FFNetworkBuilder) Build() *FFNetwork {
 		// here we create the training matrices
 		network.rDaDz[index] = mat.NewDense(layerSpec.outputSize, 1, nil)
 		network.rDcDa[index] = mat.NewDense(layerSpec.outputSize, 1, nil)
-		network.dirac[index] = mat.NewDense(layerSpec.outputSize, 1, nil)
+		network.delta[index] = mat.NewDense(layerSpec.outputSize, 1, nil)
 		inputSize = layerSpec.outputSize
 	}
 

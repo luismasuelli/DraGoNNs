@@ -23,7 +23,7 @@ type FFNetwork struct {
 	rDaDz []*mat.Dense
 	// Will have the sizes of corresponding layers' weighted i.
 	// It is = dc/dz = dc/da (*) da/dz.
-	dirac []*mat.Dense
+	delta []*mat.Dense
 }
 
 func (network *FFNetwork) Layer(index int) *FFLayer {
@@ -58,7 +58,7 @@ func (network *FFNetwork) opDcDaInNonLastLayer(layerIndex int, nextLayerErrors *
 	// Op1 Matrix Size: (nextLayer.inputSize = layer.outputSize rows, nextLayer.outputSize columns)
 	// Op2 Matrix Size: (nextLayer.outputSize rows, 1 column)
 	// Result Matrix Size: (nextLayer.inputSize = layer.outputSize rows, 1 column)
-	return ops.Mul(network.layers[layerIndex + 1].w.T(), network.dirac[layerIndex + 1], network.rDcDa[layerIndex])
+	return ops.Mul(network.layers[layerIndex + 1].w.T(), network.delta[layerIndex + 1], network.rDcDa[layerIndex])
 }
 
 // Derivative(layer.Activation)(layer.z) -> stored in corresponding f's derivative result
@@ -69,7 +69,7 @@ func (network *FFNetwork) opDaDz(layer *FFLayer, layerIndex int) *mat.Dense {
 }
 
 // This is the first differential error being calculated. It will imply the gradient function over the costs.
-func (network *FFNetwork) opDiracInLastLayer(
+func (network *FFNetwork) opDeltaInLastLayer(
 	lastLayerIndex int, expectedOutputActivations *mat.Dense,
 ) *mat.Dense {
 	// Consider z = weighted i
@@ -91,19 +91,19 @@ func (network *FFNetwork) opDiracInLastLayer(
 	// Op1 Matrix Size: (layer.outputSize rows, 1 column)
 	// Op2 Matrix Size: (layer.outputSize rows, 1 column)
 	// Result Matrix Size: (layer.outputSize rows, 1 column)
-	return ops.H(rDcDa, rDaDz, network.dirac[lastLayerIndex])
+	return ops.H(rDcDa, rDaDz, network.delta[lastLayerIndex])
 }
 
 // This is the second, and more, differential error(s) being calculated. It will imply the w of the following
 //   layer, and the errors from the following layer.
-func (network *FFNetwork) opDiracInNonLastLayer(
+func (network *FFNetwork) opDeltaInNonLastLayer(
 	layerIndex int,
 ) *mat.Dense {
 	layer := network.layers[layerIndex]
 	// First, we calculate the propagated gradient by using the next layer errors and transposing the next layer w
 	// Op2 Matrix Size: (nextLayer.outputSize rows, 1 column)
 	// Fetched Matrix Size: (nextLayer.inputSize = layer.outputSize rows, 1 column)
-	rDcDa := network.opDcDaInNonLastLayer(layerIndex, network.dirac[layerIndex + 1])
+	rDcDa := network.opDcDaInNonLastLayer(layerIndex, network.delta[layerIndex + 1])
 	// Then, we have a matching matrix of propagated gradients. Just calculate the derivative
 	// Fetched Matrix Size: (layer.outputSize rows, 1 column)
 	rDaDz := network.opDaDz(layer, layerIndex)
@@ -111,7 +111,7 @@ func (network *FFNetwork) opDiracInNonLastLayer(
 	// Op1 Matrix Size: (nextLayer.inputSize = layer.outputSize rows, 1 column)
 	// Op2 Matrix Size: (layer.outputSize rows, 1 column)
 	// Result Matrix Size: (layer.outputSize rows, 1 column)
-	return ops.H(rDcDa, rDaDz, network.dirac[layerIndex])
+	return ops.H(rDcDa, rDaDz, network.delta[layerIndex])
 }
 
 // Now, to fix the layers!
@@ -120,19 +120,19 @@ func (network *FFNetwork) fixLayer(layerIndex int, learningRate float64) {
 	weights := layer.w
 	biases := layer.b
 
-	// Cartesian product of i and dirac
+	// Cartesian product of i and delta
 	iT := layer.i.T()
-	dirac := network.dirac[layerIndex]
-	rows, _ := dirac.Dims() // rows = n. of errors (neurons)
+	delta := network.delta[layerIndex]
+	rows, _ := delta.Dims() // rows = n. of errors (neurons)
 	_, columns := iT.Dims() // columns = n. of inputs (or former a)
-	diracXiT := mat.NewDense(rows, columns, nil) // size = n. of errors x n. of inputs
-	dirac_ := mat.NewDense(rows, 1, nil) // size = n. of errors x n. of inputs
+	deltaXiT := mat.NewDense(rows, columns, nil) // size = n. of errors x n. of inputs
+	delta_ := mat.NewDense(rows, 1, nil) // size = n. of errors x n. of inputs
 	// Op1 Matrix Size: (layer.outputSize rows, 1 column)
 	// Op2 Matrix Size: (1 row, layer.inputSize columns)
 	// Result Matrix Size: (layer.outputSize rows, layer.inputSize column)
-	// Finally, modify the widths and bias by subtracting the scaled dirac
-	weights.Sub(weights, ops.Scale(learningRate, ops.Mul(dirac, iT, diracXiT), diracXiT))
-	biases.Sub(biases, ops.Scale(learningRate, dirac, dirac_))
+	// Finally, modify the widths and bias by subtracting the scaled delta
+	weights.Sub(weights, ops.Scale(learningRate, ops.Mul(delta, iT, deltaXiT), deltaXiT))
+	biases.Sub(biases, ops.Scale(learningRate, delta, delta_))
 }
 
 func (network *FFNetwork) Test(input *mat.Dense, expectedOutput *mat.Dense) (*mat.Dense, float64) {
@@ -143,9 +143,9 @@ func (network *FFNetwork) Test(input *mat.Dense, expectedOutput *mat.Dense) (*ma
 
 func (network *FFNetwork) adjust(expectedOutput *mat.Dense, learningRate float64) {
 	layersCount := len(network.layers)
-	network.opDiracInLastLayer(layersCount - 1, expectedOutput)
+	network.opDeltaInLastLayer(layersCount - 1, expectedOutput)
 	for index := layersCount - 2; index >= 0; index-- {
-		network.opDiracInNonLastLayer(index)
+		network.opDeltaInNonLastLayer(index)
 	}
 	// And finally, after we know all the errors (which are vertical rows), fix the layers
 	for index := 0; index < layersCount; index++ {
