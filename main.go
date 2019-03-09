@@ -14,7 +14,7 @@ import (
 func trainNew() {
 	network := cmd.NewMNISTNetwork()
 	fmt.Println("Network created. Training...")
-	cmd.TrainMNISTNetwork(network, 30)
+	cmd.TrainMNISTNetwork(network, 5)
 	fmt.Println("Network trained. Saving...")
 	if err := cmd.SaveMNISTNetwork(network); err != nil {
 		fmt.Printf("Could not save the network! : %v\n", err)
@@ -29,7 +29,7 @@ func trainExisting() {
 		fmt.Printf("Could not load the network! : %v\n", err)
 	} else {
 		fmt.Println("Network loaded. Training...")
-		cmd.TrainMNISTNetwork(network, 30)
+		cmd.TrainMNISTNetwork(network, 5)
 		fmt.Println("Network trained. Saving...")
 		if err := cmd.SaveMNISTNetwork(network); err != nil {
 			fmt.Printf("Could not save the network! : %v\n", err)

@@ -66,8 +66,6 @@ func TrainMNISTNetwork(network *ffnn.FFNetwork, epochs int) {
 
 				// train the NN with that data
 				inputs, targets := makePair(record)
-				fmt.Printf("Training case %v (epoch %v):\n- Inputs: %v\n- Targets: %v\n",
-					       index, epoch, inputs, targets)
 				network.Train(inputs, targets)
 				index++
 			}
